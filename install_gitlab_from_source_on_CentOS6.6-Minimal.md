@@ -26,11 +26,11 @@ any assumptions GitLab makes about its environment. I personally tried this on R
 ### Extend the size of lvm partition /opt
 1. Create the physical volume
 ```
-pvcreate /dev/sdc
+pvcreate /dev/sdb
 ```
 2. Add pv /dev/sdc into  the volume group 'systemvg' which includes partition /opt
 ```
-vgextend systemvg /dev/sdc
+vgextend systemvg /dev/sdb
 ```
 3. extend logical volume systemvg-optlv
 ```
@@ -754,20 +754,20 @@ sudo chmod -R u+rwX  public/uploads
 
 # the sed will speak for itself as regard of settings
 sed -i \
--e 's#\(.*host:\) localhost#\1 gitlab.cnsuning.com#g' \
+-e 's#\(.*host:\) localhost#\1 gitlab.example.com#g' \
 -e 's#\(.*port:\) 80#\1 443#g' \
 -e 's#\(.*https:\) false#\1 true#g' \
--e 's#\(.*email_from:\) example@example.com#\1 lvfeng@cnsuning.com#g' \
+-e 's#\(.*email_from:\) example@example.com#\1 lvfeng@example.com#g' \
 config/gitlab.yml
 
 # set smtp email service,
 cp config/initializers/smtp_settings.rb.sample config/initializers/smtp_settings.rb
 sed -i \
--e 's#\(address:\) "email.server.com"#\1 "mail.cnsuning.com"#g' \
--e 's#\(port:\) 456#\1 25#g' \
--e 's#\(user_name:\) "smtp"#\1 "lvfeng"#g' \
--e 's#\(domain:\) "gitlab.company.com"#\1 "cnsuning.com"#g' \
--e 's#\(password:\) "123456"#\1 "@Cqmyg1130"#g' \
+-e 's#\(address:\) "email.server.com"#\1 "mail.example.com"#g' \
+-e 's#\(port:\) 456#\1 port#g' \
+-e 's#\(user_name:\) "smtp"#\1 "username"#g' \
+-e 's#\(domain:\) "gitlab.company.com"#\1 "example.com"#g' \
+-e 's#\(password:\) "123456"#\1 "secret"#g' \
 config/initializers/smtp_settings.rb
 
 
@@ -805,7 +805,7 @@ cp config/database.yml.mysql config/database.yml
 sed -i \
 -e 's#\(.*pool:\) 10#\1 20#' \
 -e 's#\(.*username:\) git#\1 gitlab#' \
--e 's#\(.*password:\) "secure password"#\1 "China4theWin@TI5"#' \
+-e 's#\(.*password:\) "secure password"#\1 "secret"#' \
 -e 's@\(.*\)# \(host:\) localhost@\1\2 localhost@' \
 -e 's@\(.*\)# \(socket:\) /tmp/mysql.sock@\1\2 /var/run/mysql/run/mysql.socket@' \
 config/database.yml
@@ -821,7 +821,7 @@ config/database.yml
 
 # add one entry in your /etc/hosts file, it's intended to map the ip with a constant hostname
 # the ip address can be replaced with either an aceessable gem repository url or a self-constructed ip address
-10.19.37.141 gems
+192.168.1.11 gems
 
 # declare your own repo address for gem
 [root@gitlab ~]# gem sources -a http://gems:9292/
