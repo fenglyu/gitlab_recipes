@@ -568,7 +568,7 @@ export PS1
 EOF
 ```
 
-#### yet another /etc/init.d/redis
+#### Yet another /etc/init.d/redis
 > rewrite it since the offical generate script turn out to be a piece of shit
 
 ```
@@ -663,8 +663,10 @@ redis_git_sha1:00000000
 ```
 
 #### Create System user git
+```
 groupadd git
 useadd -m -g git git
+```
 
 #### Config Sendmail
 ```
