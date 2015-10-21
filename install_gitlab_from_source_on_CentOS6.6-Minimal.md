@@ -80,14 +80,30 @@ make -j 4
 sudo make install
 ```
 
-### Python related
-> It's recommaned to update python from 2.6 to 2.7 for some custom settings
-> BTW, I didn't install python for the sake of being an idiot in python :grin:
 
 #### Install these modules for python
 ```shell
+
+# install basic headers
 yum install sqlite-devel openssl-devel readline-devel gdbm-devel bzip2-devel ncurses-devel
+
+# install extra headers in case we will meet the warning when compile Python, It can be ignored though
+ yum install 1:tk-8.5.7-5.el6.x86_64 1:tix-8.4.3-5.el6.x86_64 tkinter-2.6.6-64.el6.x86_64 xorg-x11-proto-devel-7.7-9.el6.noarch freetype-devel-2.3.11-15.el6_6.1.x86_64 fontconfig-devel-2.8.0-5.el6.x86_64 libXau-devel-1.0.6-4.el6.x86_64 libxcb-devel-1.9.1-3.el6.x86_64 libX11-devel-1.6.0-6.el6.x86_64 libXrender-devel-0.9.8-2.1.el6.x86_64 libXft-devel-2.3.1-2.el6.x86_64 1:tk-devel-8.5.7-5.el6.x86_64 1:tix-devel-8.4.3-5.el6.x86_64 bzip2-devel-1.0.5-7.el6_0.x86_64
 ```
+
+### Python related
+> It's recommaned to update python from 2.6 to 2.7 for some custom settings
+
+```
+# compile from source
+./configure
+make
+sudo make install
+
+# modify /usr/bin/yum
+sed -i -e '1 s/python/python2.6/g' /usr/bin/yum
+```
+
 
 ### Compile cmake to install mariadb later
 ```shell
@@ -110,7 +126,7 @@ so I put their online repositorie http addresses here, go manually fetch any pac
   yum -y install  readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel gcc-c++ libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui python-devel redis sudo wget crontabs logwatch logrotate perl-Time-HiRes git vim-enhanced
 ```
 
-> Exclude these which have existed in system by default, get a list of what we're missing.
+> Exclude these which have existed in system by default, get a list of which we're missing.
 
 ```shell
 [root@lifestealer ~]# for i in `echo "vim-enhanced readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel gcc-c++ libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui python-devel redis sudo wget crontabs logwatch logrotate perl-Time-HiRes git"` ;do  rpm -q $i  1>/dev/null || echo $i  ;done |xargs
@@ -156,7 +172,7 @@ yum install sendmail-cf
 >  they're both builtin if you didn't choose a minimal installation.
 
 ```
-yum install libtevent-devel libevent lzo lzop
+yum install libevent-devel libevent lzo lzop
 ```
 #### Download lz4 rpm pacakges from EPEL repo
 ```
@@ -177,7 +193,6 @@ sudo rpm -ivh lz4-devel-r131-1.el6.x86_64.rpm
 sudo rpm -ivh msgpack-0.5.7-5.el6.x86_64.rpm
 sudo rpm -ivh msgpack-devel-0.5.7-5.el6.x86_64.rpm
 sudo rpm -ivh cracklib-devel-2.8.16-4.el6.x86_64.rpm
-cracklib-devel-2.8.16-4.el6.x86_64.rpm
 sudo rpm -ivh libevent-headers-1.4.13-4.el6.noarch.rpm libevent-devel-1.4.13-4.el6.x86_64.rpm libevent-doc-1.4.13-4.el6.noarch.rpm
 sudo rpm -ivh lzo-minilzo-2.03-3.1.el6.x86_64.rpm lzo-devel-2.03-3.1.el6.x86_64.rpm
 ```
@@ -297,10 +312,15 @@ make -j 2
 sudo make install
 ```
 
+#### load gperftool
 ```TODO
+# run with root
 cat >> /etc/ld.so.conf.d/maradb-10.1.5.conf<<EOF
 /usr/local/lib/
 EOF
+
+# this is necessary when compile mariadb
+ldconfig
 ```
 
 
@@ -357,7 +377,7 @@ cmake . \
 -DWITH_SPHINX_STORAGE_ENGINE=ON \
 -DWITH_BLACKHOLE_STORAGE_ENGINE=ON
 
-make -j8
+make -j4
 sudo make install
 
 # create mysql data directory
@@ -369,6 +389,8 @@ fi
 sudo chmod +w ${MYSQL_INSTALL_DIR}
 sudo chown -R mysql:mysql ${MYSQLDATADIR}
 sudo chmod go-rwx ${MYSQLDATADIR} -R
+# enable socket creation permission for user mysql
+sudo chown mysql:mysql /var/run/mysql/ -R
 
 # prepare the bootstrap config file
 sudo cp support-files/my-large.cnf /etc/my.cnf
@@ -390,10 +412,10 @@ sudo ln -s ${MYSQL_INSTALL_DIR}/include/mysql/ /usr/include/mysql
 
 # link the exec file
 sudo ln -s ${MYSQL_INSTALL_DIR}/bin/mysql /usr/bin/mysql
-sudo ln -s ${MYSQL_INSTALL_DIR}
 
-# add the ld config path
-sudo cat > /etc/ld.so.conf.d/maradb-10.1.5.conf<<EOF
+# add the ld config path, run with root
+MYSQL_INSTALL_DIR="/opt/mysql"
+cat >> /etc/ld.so.conf.d/maradb-10.1.8.conf<<EOF
 ${MYSQL_INSTALL_DIR}/lib/mysql
 ${MYSQL_INSTALL_DIR}/lib
 EOF
@@ -402,6 +424,8 @@ EOF
 sudo ldconfig
 
 # Install builtin tables
+MYSQL_INSTALL_DIR="/opt/mysql"
+MYSQLDATADIR="/data/mysql"
 ${MYSQL_INSTALL_DIR}/scripts/mysql_install_db --basedir=${MYSQL_INSTALL_DIR} \
 --datadir=${MYSQLDATADIR} \
 --user=mysql
