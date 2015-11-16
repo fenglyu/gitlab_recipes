@@ -480,7 +480,7 @@ flush privileges;
 [root@itsasitapp203 ~]# useradd -s /sbin/nologin -g nginx nginx
 
 
-# Create the directory which contains the socket
+# Create the directory which contains the socket, run with root
 mkdir /var/run/redis
 chown redis:redis /var/run/redis
 chmod 755 /var/run/redis
@@ -543,7 +543,7 @@ sudo chown redis:redis /opt/redis -R
 
 # ass wipe some simple configurations
 sudo mkdir /etc/redis
-sudo egrep -Ev "^$|^#" /opt/redis/redis-3.0.3/redis.conf > /etc/redis/redis.conf
+egrep -Ev "^$|^#" /opt/redis/redis-3.0.3/redis.conf > /etc/redis/redis.conf
 
 # change daemonize to yes
 sed -i 's/^daemonize .*/daemonize yes/g' /etc/redis/redis.conf
@@ -567,7 +567,8 @@ echo 'unixsocketperm 770'|tee -a /etc/redis/redis.conf
 su - redis
 
 # some tips make the environent looks more friendly
-cat >> .bash_profile<<EOF
+# put below contents insdie .bash_profile
+
 # .bashrc
 
 # Source global definitions
@@ -589,7 +590,7 @@ echo "Current Direcotry: $(pwd)"
 
 PS1="[\u@\h \W]\$ "
 export PS1
-EOF
+
 ```
 
 #### yet another /etc/init.d/redis
@@ -597,7 +598,7 @@ EOF
 
 ```
 # put script redis.sh under /etc/init.d so it will bootstrap with init
-cat > /etc/init.d/redis<<EOF
+
 #!/bin/sh
 #set -xv
 # written by Feng LYU
@@ -671,9 +672,9 @@ case "$1" in
         echo "Please use start, stop, restart or status as first argument"
         ;;
 esac
-EOF
 
-
+# assign execute permission
+chmod u+x /etc/init.d/redis
 #start redis
 service redis start
 # connect to redis
@@ -712,8 +713,7 @@ restorecon /home/git/.forward
 # Based on the offcial installation that ruby 2.1.6 is the supported version
 tar xvf ruby-2.1.6.tar.gz
 cd ruby-2.1.6
-make
-make install
+./configure && make -j4 && sudo make install
 ```
 
 #### Configure GitLab, Gitlab-shell, etc
