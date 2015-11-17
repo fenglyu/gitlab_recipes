@@ -742,13 +742,13 @@ ln -s gitlabhq-7-13-stable gitlab
 ln -s gitlab-shell-master gitlab-shell
 
 cd gitlab-shell
-cp config.yml.example config.yml
+cp -v config.yml.example config.yml
 
 # gitlab_url, check the introduciton for advise
 sed -i 's#^gitlab_url: .*#gitlab_url: "http://localhost:8080/"#g' config.yml
 
 # redis path (orignal: /usr/bin/redis-cli)
-sed -i 's#bin: .*#bin: /opt/redis/redis-3.0.3/src/redis-cli' config.xml
+sed -i 's#bin: .*#bin: /opt/redis/redis-3.0.3/src/redis-cli#g' config.yml
 
 # repos_path
 sed -i 's#^repos_path: .*#repos_path: "/data/git/repositories"#g' config.yml
@@ -760,13 +760,21 @@ chmod -R u+rwX,go-w /opt/git/gitlab-shell/log/
 
 sed -i 's@^# \(log_file: \)"/home/git/gitlab-shell/gitlab-shell.log"@\1"/opt/git/gitlab-shell/log/gitlab-shell.log"@g' config.yml
 
+# create with root
+mkdir /data/git
+chown git:git /data/git/ -R
+chmod g-x,o-x /data/git/ -R
+
 # Do setup
 ./bin/install
+
+# exit
+cd ..
 
 # GitLab
 cd gitlab
 
-cp config/gitlab.yml.example config/gitlab.yml
+cp -v config/gitlab.yml.example config/gitlab.yml
 
 sudo chown -R git log/
 sudo chown -R git tmp/
@@ -782,13 +790,15 @@ sed -i \
 -e 's#\(.*port:\) 80#\1 443#g' \
 -e 's#\(.*https:\) false#\1 true#g' \
 -e 's#\(.*email_from:\) example@example.com#\1 lvfeng@example.com#g' \
+-e 's#\(.*repos_path:\) /home/git/repositories/#\1 /data/git/repositories/#g'
+-e 's#/home/git#/opt/git#g' \
 config/gitlab.yml
 
 # set smtp email service,
-cp config/initializers/smtp_settings.rb.sample config/initializers/smtp_settings.rb
+cp -v config/initializers/smtp_settings.rb.sample config/initializers/smtp_settings.rb
 sed -i \
 -e 's#\(address:\) "email.server.com"#\1 "mail.example.com"#g' \
--e 's#\(port:\) 456#\1 port#g' \
+-e 's#\(port:\) 456#\1 25#g' \
 -e 's#\(user_name:\) "smtp"#\1 "username"#g' \
 -e 's#\(domain:\) "gitlab.company.com"#\1 "example.com"#g' \
 -e 's#\(password:\) "123456"#\1 "secret"#g' \
@@ -802,7 +812,7 @@ sudo chmod u+rwx,g=rx,o-rwx /opt/git/gitlab-satellites
 # Enable cluster mode if you expect to have a high load instance
 # Ex. change amount of workers to 3 for 2GB RAM server
 # Set the number of workers to at least the number of cores
-cp config/unicorn.rb.example config/unicorn.rb
+cp -v config/unicorn.rb.example config/unicorn.rb
 
 # configure unicorn.rb
 sed -i \
@@ -815,17 +825,17 @@ sed -i \
 config/unicorn.rb
 
 # Copy the example Rack attack config
-cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
+cp -v config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
 
 # Configure Git global settings for git user, used when editing via web editor
 git config --global core.autocrlf input
 
 # Configure Redis connection settings
-cp config/resque.yml.example config/resque.yml
+cp -v config/resque.yml.example config/resque.yml
 
 # Configure GitLab DB Settings
 # MySQL only:
-cp config/database.yml.mysql config/database.yml
+cp -v config/database.yml.mysql config/database.yml
 sed -i \
 -e 's#\(.*pool:\) 10#\1 20#' \
 -e 's#\(.*username:\) git#\1 gitlab#' \
@@ -837,7 +847,7 @@ config/database.yml
 
 #### Gitlab ruby on Rails
 > here we start to face the ruby on rails dependency issue which worries me a lot.
-> In order to make life easier, I made my own wheel which.
+> In order to make life easier, I made my own wheel.
 
 ```
 # Install the Bundler Gem and all the related rails gems
@@ -864,6 +874,11 @@ http://gems:9292/
  [root@gitlab ~]#
 ```
 
+# config bundler source mirror if it's the first time you initialize your bundler
+```
+bundle config mirror.https://rubygems.org https://ruby.taobao.org
+```
+
 #### Install Gems
 Note: As of bundler 1.5.2, you can invoke bundle install -jN (where N the number of your processor cores) and enjoy the parallel gems installation with measurable difference in completion time (~60% faster). Check the number of your cores with nproc. For more information check this post. First make sure you have bundler >= 1.5.2 (run bundle -v) as it addresses some issues that were fixed in 1.5.2.
 ```
@@ -885,6 +900,12 @@ bundle exec rake gitlab:setup RAILS_ENV=production
 Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
 ```
 bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=yourpassword
+```
+
+# default passowrd for root access
+```
+login.........root
+password......5iveL!fe
 ```
 
 #### Install schedules
@@ -940,8 +961,7 @@ sudo make install
 #### Site Configuration
 Copy the example site config:
 ```
-sudo cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
-sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
+sudo cp lib/support/nginx/gitlab /opt/nginx/conf/gitlab.conf
 ```
 
 
