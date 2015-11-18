@@ -776,6 +776,7 @@ cd gitlab
 
 cp -v config/gitlab.yml.example config/gitlab.yml
 
+
 sudo chown -R git log/
 sudo chown -R git tmp/
 sudo chmod -R u+rwX,go-w log/
@@ -917,7 +918,10 @@ sudo -u gitlab_ci -H bundle exec whenever -w RAILS_ENV=production
 #### Install Init Script
 Download the init script (will be /etc/init.d/gitlab):
 ```
-sudo cp lib/support/init.d/gitlab /etc/init.d/gitlab
+sudo cp -v lib/support/init.d/gitlab /etc/init.d/gitlab
+
+sudo cp -v lib/support/init.d/gitlab.default.example /etc/default/gitlab
+sudo sed -i -e 's/home/opt/g' /etc/default/gitlab
 ```
 If you installed GitLab in another directory or as a user other than the default you should change these settings in /etc/default/gitlab. Do not edit /etc/init.d/gitlab as it will be changed on upgrade.
 Make GitLab start on boot:
