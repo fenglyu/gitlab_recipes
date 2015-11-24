@@ -471,11 +471,10 @@ flush privileges;
 [root@itsasitapp203 ~]# groupadd git
 [root@itsasitapp203 ~]# useradd -m -g git git
 # rails will aceess redis as user git
-[root@itsasitapp203 ~]# usermod -Ggit,redis -a git
 [root@itsasitapp203 ~]# groupadd mysql
 [root@itsasitapp203 ~]# useradd -m -g mysql mysql
 # rails will aceess mysql as user git
-[root@itsasitapp203 ~]# usermod -Gmysql,git git
+[root@itsasitapp203 ~]# usermod -Ggit,redis,wheel,mysql -a git
 [root@itsasitapp203 ~]# groupadd nginx
 [root@itsasitapp203 ~]# useradd -s /sbin/nologin -g nginx nginx
 
@@ -736,7 +735,9 @@ Note: the default locations for gitlab-satellites and repositories can be config
 ```
 
 #### Configuration details
+
 ```
+
 # Gitlab-shell
 ln -s gitlabhq-7-13-stable gitlab
 ln -s gitlab-shell-master gitlab-shell
@@ -759,6 +760,12 @@ chown git:git /opt/git/gitlab-shell/log/ -R
 chmod -R u+rwX,go-w /opt/git/gitlab-shell/log/
 
 sed -i 's@^# \(log_file: \)"/home/git/gitlab-shell/gitlab-shell.log"@\1"/opt/git/gitlab-shell/log/gitlab-shell.log"@g' config.yml
+
+sed -i -e 's@^#  \(ca_file:\) /etc/ssl/cert.pem@  \1 /etc/nginx/ssl/cnsuning.pem@g' \
+-e 's@^#  \(ca_path:\) /etc/pki/tls/certs@  \1 /etc/nginx/ssl/cnsuning.key@g' \
+-e 's@\(self_signed_cert:\) false@\1 true@g' \
+config.yml
+
 
 # create with root
 mkdir /data/git
@@ -783,6 +790,7 @@ sudo chmod -R u+rwX,go-w log/
 sudo chmod -R u+rwX tmp/
 sudo chmod -R u+rwX tmp/pids/
 sudo chmod -R u+rwX tmp/sockets/
+sudo mkdir public/uploads -p
 sudo chmod -R u+rwX  public/uploads
 
 # the sed will speak for itself as regard of settings
@@ -791,7 +799,7 @@ sed -i \
 -e 's#\(.*port:\) 80#\1 443#g' \
 -e 's#\(.*https:\) false#\1 true#g' \
 -e 's#\(.*email_from:\) example@example.com#\1 lvfeng@example.com#g' \
--e 's#\(.*repos_path:\) /home/git/repositories/#\1 /data/git/repositories/#g'
+-e 's#\(.*repos_path:\) /home/git/repositories/#\1 /data/git/repositories/#g' \
 -e 's#/home/git#/opt/git#g' \
 config/gitlab.yml
 
@@ -884,7 +892,7 @@ bundle config mirror.https://rubygems.org https://ruby.taobao.org
 Note: As of bundler 1.5.2, you can invoke bundle install -jN (where N the number of your processor cores) and enjoy the parallel gems installation with measurable difference in completion time (~60% faster). Check the number of your cores with nproc. For more information check this post. First make sure you have bundler >= 1.5.2 (run bundle -v) as it addresses some issues that were fixed in 1.5.2.
 ```
 # For PostgreSQL (note, the option says "without ... mysql")
-bundle install --deployment --without development test mysql aws kerberos
+#bundle install --deployment --without development test mysql aws kerberos
 
 # Or if you use MySQL (note, the option says "without ... postgres")
 bundle install --deployment --without development test postgres aws kerberos
@@ -919,7 +927,7 @@ sudo -u gitlab_ci -H bundle exec whenever -w RAILS_ENV=production
 Download the init script (will be /etc/init.d/gitlab):
 ```
 sudo cp -v lib/support/init.d/gitlab /etc/init.d/gitlab
-
+sudo sed -i -e 's/home/opt/g' /etc/init.d/gitlab
 sudo cp -v lib/support/init.d/gitlab.default.example /etc/default/gitlab
 sudo sed -i -e 's/home/opt/g' /etc/default/gitlab
 ```
@@ -965,7 +973,14 @@ sudo make install
 #### Site Configuration
 Copy the example site config:
 ```
-sudo cp lib/support/nginx/gitlab /opt/nginx/conf/gitlab.conf
+sudo cp lib/support/nginx/gitlab-ssl /opt/nginx/conf/gitlab-ssl.conf
+sed -i -e 's#home#opt#g' \
+-e 's#YOUR_SERVER_FQDN#gitlab.cnsuning.com#g' \
+-e 's#\(access_log\)  /var/log/nginx/gitlab_access.log;#\1  /opt/nginx/logs/gitlab_access.log;#g' \
+-e 's#\(error_log\)   /var/log/nginx/gitlab_error.log;#\1  /opt/nginx/logs  /gitlab_error.log;#g' \
+-e 's#\(ssl_certificate\) /etc/nginx/ssl/gitlab.crt;#\1 /etc/nginx/ssl/cnsuning.pem;#' \
+-e 's#\(ssl_certificate_key\) /etc/nginx/ssl/gitlab.key;#\1 /etc/nginx/ssl/cnsuning.key;#' \
+/opt/nginx/conf/gitlab-ssl.conf
 ```
 
 
@@ -1007,7 +1022,7 @@ Successfully installed charlock_holmes-0.6.9.4
 Parsing documentation for charlock_holmes-0.6.9.4
 Installing ri documentation for charlock_holmes-0.6.9.4
 Done installing documentation for charlock_holmes after 0 seconds
-1 gem installe
+1 gem installed
 ```
 
 
