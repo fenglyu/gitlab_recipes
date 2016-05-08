@@ -80,14 +80,30 @@ make -j 4
 sudo make install
 ```
 
-### Python related
-> It's recommaned to update python from 2.6 to 2.7 for some custom settings
-> BTW, I didn't install python for the sake of being an idiot in python :grin:
 
 #### Install these modules for python
 ```shell
+
+# install basic headers
 yum install sqlite-devel openssl-devel readline-devel gdbm-devel bzip2-devel ncurses-devel
+
+# install extra headers in case we will meet the warning when compile Python, It can be ignored though
+ yum install 1:tk-8.5.7-5.el6.x86_64 1:tix-8.4.3-5.el6.x86_64 tkinter-2.6.6-64.el6.x86_64 xorg-x11-proto-devel-7.7-9.el6.noarch freetype-devel-2.3.11-15.el6_6.1.x86_64 fontconfig-devel-2.8.0-5.el6.x86_64 libXau-devel-1.0.6-4.el6.x86_64 libxcb-devel-1.9.1-3.el6.x86_64 libX11-devel-1.6.0-6.el6.x86_64 libXrender-devel-0.9.8-2.1.el6.x86_64 libXft-devel-2.3.1-2.el6.x86_64 1:tk-devel-8.5.7-5.el6.x86_64 1:tix-devel-8.4.3-5.el6.x86_64 bzip2-devel-1.0.5-7.el6_0.x86_64
 ```
+
+### Python related
+> It's recommaned to update python from 2.6 to 2.7 for some custom settings
+
+```
+# compile from source
+./configure
+make
+sudo make install
+
+# modify /usr/bin/yum
+sed -i -e '1 s/python/python2.6/g' /usr/bin/yum
+```
+
 
 ### Compile cmake to install mariadb later
 ```shell
@@ -110,7 +126,7 @@ so I put their online repositorie http addresses here, go manually fetch any pac
   yum -y install  readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel gcc-c++ libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui python-devel redis sudo wget crontabs logwatch logrotate perl-Time-HiRes git vim-enhanced
 ```
 
-> Exclude these which have existed in system by default, get a list of what we're missing.
+> Exclude these which have existed in system by default, get a list of which we're missing.
 
 ```shell
 [root@lifestealer ~]# for i in `echo "vim-enhanced readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel gcc-c++ libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui python-devel redis sudo wget crontabs logwatch logrotate perl-Time-HiRes git"` ;do  rpm -q $i  1>/dev/null || echo $i  ;done |xargs
@@ -156,7 +172,7 @@ yum install sendmail-cf
 >  they're both builtin if you didn't choose a minimal installation.
 
 ```
-yum install libtevent-devel libevent lzo lzop
+yum install libevent-devel libevent lzo lzop
 ```
 #### Download lz4 rpm pacakges from EPEL repo
 ```
@@ -177,7 +193,6 @@ sudo rpm -ivh lz4-devel-r131-1.el6.x86_64.rpm
 sudo rpm -ivh msgpack-0.5.7-5.el6.x86_64.rpm
 sudo rpm -ivh msgpack-devel-0.5.7-5.el6.x86_64.rpm
 sudo rpm -ivh cracklib-devel-2.8.16-4.el6.x86_64.rpm
-cracklib-devel-2.8.16-4.el6.x86_64.rpm
 sudo rpm -ivh libevent-headers-1.4.13-4.el6.noarch.rpm libevent-devel-1.4.13-4.el6.x86_64.rpm libevent-doc-1.4.13-4.el6.noarch.rpm
 sudo rpm -ivh lzo-minilzo-2.03-3.1.el6.x86_64.rpm lzo-devel-2.03-3.1.el6.x86_64.rpm
 ```
@@ -297,10 +312,15 @@ make -j 2
 sudo make install
 ```
 
+#### load gperftool
 ```TODO
+# run with root
 cat >> /etc/ld.so.conf.d/maradb-10.1.5.conf<<EOF
 /usr/local/lib/
 EOF
+
+# this is necessary when compile mariadb
+ldconfig
 ```
 
 
@@ -357,7 +377,7 @@ cmake . \
 -DWITH_SPHINX_STORAGE_ENGINE=ON \
 -DWITH_BLACKHOLE_STORAGE_ENGINE=ON
 
-make -j8
+make -j4
 sudo make install
 
 # create mysql data directory
@@ -369,6 +389,8 @@ fi
 sudo chmod +w ${MYSQL_INSTALL_DIR}
 sudo chown -R mysql:mysql ${MYSQLDATADIR}
 sudo chmod go-rwx ${MYSQLDATADIR} -R
+# enable socket creation permission for user mysql
+sudo chown mysql:mysql /var/run/mysql/ -R
 
 # prepare the bootstrap config file
 sudo cp support-files/my-large.cnf /etc/my.cnf
@@ -390,10 +412,10 @@ sudo ln -s ${MYSQL_INSTALL_DIR}/include/mysql/ /usr/include/mysql
 
 # link the exec file
 sudo ln -s ${MYSQL_INSTALL_DIR}/bin/mysql /usr/bin/mysql
-sudo ln -s ${MYSQL_INSTALL_DIR}
 
-# add the ld config path
-sudo cat > /etc/ld.so.conf.d/maradb-10.1.5.conf<<EOF
+# add the ld config path, run with root
+MYSQL_INSTALL_DIR="/opt/mysql"
+cat >> /etc/ld.so.conf.d/maradb-10.1.8.conf<<EOF
 ${MYSQL_INSTALL_DIR}/lib/mysql
 ${MYSQL_INSTALL_DIR}/lib
 EOF
@@ -402,6 +424,8 @@ EOF
 sudo ldconfig
 
 # Install builtin tables
+MYSQL_INSTALL_DIR="/opt/mysql"
+MYSQLDATADIR="/data/mysql"
 ${MYSQL_INSTALL_DIR}/scripts/mysql_install_db --basedir=${MYSQL_INSTALL_DIR} \
 --datadir=${MYSQLDATADIR} \
 --user=mysql
@@ -447,16 +471,15 @@ flush privileges;
 [root@itsasitapp203 ~]# groupadd git
 [root@itsasitapp203 ~]# useradd -m -g git git
 # rails will aceess redis as user git
-[root@itsasitapp203 ~]# usermod -Ggit,redis -a git
 [root@itsasitapp203 ~]# groupadd mysql
 [root@itsasitapp203 ~]# useradd -m -g mysql mysql
 # rails will aceess mysql as user git
-[root@itsasitapp203 ~]# usermod -Gmysql,git git
+[root@itsasitapp203 ~]# usermod -Ggit,redis,wheel,mysql -a git
 [root@itsasitapp203 ~]# groupadd nginx
 [root@itsasitapp203 ~]# useradd -s /sbin/nologin -g nginx nginx
 
 
-# Create the directory which contains the socket
+# Create the directory which contains the socket, run with root
 mkdir /var/run/redis
 chown redis:redis /var/run/redis
 chmod 755 /var/run/redis
@@ -519,7 +542,7 @@ sudo chown redis:redis /opt/redis -R
 
 # ass wipe some simple configurations
 sudo mkdir /etc/redis
-sudo egrep -Ev "^$|^#" /opt/redis/redis-3.0.3/redis.conf > /etc/redis/redis.conf
+egrep -Ev "^$|^#" /opt/redis/redis-3.0.3/redis.conf > /etc/redis/redis.conf
 
 # change daemonize to yes
 sed -i 's/^daemonize .*/daemonize yes/g' /etc/redis/redis.conf
@@ -543,7 +566,8 @@ echo 'unixsocketperm 770'|tee -a /etc/redis/redis.conf
 su - redis
 
 # some tips make the environent looks more friendly
-cat >> .bash_profile<<EOF
+# put below contents insdie .bash_profile
+
 # .bashrc
 
 # Source global definitions
@@ -565,7 +589,7 @@ echo "Current Direcotry: $(pwd)"
 
 PS1="[\u@\h \W]\$ "
 export PS1
-EOF
+
 ```
 
 #### Yet another /etc/init.d/redis
@@ -573,7 +597,7 @@ EOF
 
 ```
 # put script redis.sh under /etc/init.d so it will bootstrap with init
-cat > /etc/init.d/redis<<EOF
+
 #!/bin/sh
 #set -xv
 # written by Feng LYU
@@ -647,9 +671,9 @@ case "$1" in
         echo "Please use start, stop, restart or status as first argument"
         ;;
 esac
-EOF
 
-
+# assign execute permission
+chmod u+x /etc/init.d/redis
 #start redis
 service redis start
 # connect to redis
@@ -690,8 +714,7 @@ restorecon /home/git/.forward
 # Based on the offcial installation that ruby 2.1.6 is the supported version
 tar xvf ruby-2.1.6.tar.gz
 cd ruby-2.1.6
-make
-make install
+./configure && make -j4 && sudo make install
 ```
 
 #### Configure GitLab, Gitlab-shell, etc
@@ -714,19 +737,21 @@ Note: the default locations for gitlab-satellites and repositories can be config
 ```
 
 #### Configuration details
+
 ```
+
 # Gitlab-shell
 ln -s gitlabhq-7-13-stable gitlab
 ln -s gitlab-shell-master gitlab-shell
 
 cd gitlab-shell
-cp config.yml.example config.yml
+cp -v config.yml.example config.yml
 
 # gitlab_url, check the introduciton for advise
 sed -i 's#^gitlab_url: .*#gitlab_url: "http://localhost:8080/"#g' config.yml
 
 # redis path (orignal: /usr/bin/redis-cli)
-sed -i 's#bin: .*#bin: /opt/redis/redis-3.0.3/src/redis-cli' config.xml
+sed -i 's#bin: .*#bin: /opt/redis/redis-3.0.3/src/redis-cli#g' config.yml
 
 # repos_path
 sed -i 's#^repos_path: .*#repos_path: "/data/git/repositories"#g' config.yml
@@ -738,13 +763,28 @@ chmod -R u+rwX,go-w /opt/git/gitlab-shell/log/
 
 sed -i 's@^# \(log_file: \)"/home/git/gitlab-shell/gitlab-shell.log"@\1"/opt/git/gitlab-shell/log/gitlab-shell.log"@g' config.yml
 
+sed -i -e 's@^#  \(ca_file:\) /etc/ssl/cert.pem@  \1 /etc/nginx/ssl/cnsuning.pem@g' \
+-e 's@^#  \(ca_path:\) /etc/pki/tls/certs@  \1 /etc/nginx/ssl/cnsuning.key@g' \
+-e 's@\(self_signed_cert:\) false@\1 true@g' \
+config.yml
+
+
+# create with root
+mkdir /data/git
+chown git:git /data/git/ -R
+chmod g-x,o-x /data/git/ -R
+
 # Do setup
 ./bin/install
+
+# exit
+cd ..
 
 # GitLab
 cd gitlab
 
-cp config/gitlab.yml.example config/gitlab.yml
+cp -v config/gitlab.yml.example config/gitlab.yml
+
 
 sudo chown -R git log/
 sudo chown -R git tmp/
@@ -752,6 +792,7 @@ sudo chmod -R u+rwX,go-w log/
 sudo chmod -R u+rwX tmp/
 sudo chmod -R u+rwX tmp/pids/
 sudo chmod -R u+rwX tmp/sockets/
+sudo mkdir public/uploads -p
 sudo chmod -R u+rwX  public/uploads
 
 # the sed will speak for itself as regard of settings
@@ -759,14 +800,16 @@ sed -i \
 -e 's#\(.*host:\) localhost#\1 gitlab.example.com#g' \
 -e 's#\(.*port:\) 80#\1 443#g' \
 -e 's#\(.*https:\) false#\1 true#g' \
--e 's#\(.*email_from:\) example@example.com#\1 lvfeng@example.com#g' \
+-e 's#\(.*email_from:\) example@example.com#\1 whoami@example.com#g' \
+-e 's#\(.*repos_path:\) /home/git/repositories/#\1 /data/git/repositories/#g' \
+-e 's#/home/git#/opt/git#g' \
 config/gitlab.yml
 
 # set smtp email service,
-cp config/initializers/smtp_settings.rb.sample config/initializers/smtp_settings.rb
+cp -v config/initializers/smtp_settings.rb.sample config/initializers/smtp_settings.rb
 sed -i \
 -e 's#\(address:\) "email.server.com"#\1 "mail.example.com"#g' \
--e 's#\(port:\) 456#\1 port#g' \
+-e 's#\(port:\) 456#\1 25#g' \
 -e 's#\(user_name:\) "smtp"#\1 "username"#g' \
 -e 's#\(domain:\) "gitlab.company.com"#\1 "example.com"#g' \
 -e 's#\(password:\) "123456"#\1 "secret"#g' \
@@ -780,7 +823,7 @@ sudo chmod u+rwx,g=rx,o-rwx /opt/git/gitlab-satellites
 # Enable cluster mode if you expect to have a high load instance
 # Ex. change amount of workers to 3 for 2GB RAM server
 # Set the number of workers to at least the number of cores
-cp config/unicorn.rb.example config/unicorn.rb
+cp -v config/unicorn.rb.example config/unicorn.rb
 
 # configure unicorn.rb
 sed -i \
@@ -793,17 +836,17 @@ sed -i \
 config/unicorn.rb
 
 # Copy the example Rack attack config
-cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
+cp -v config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
 
 # Configure Git global settings for git user, used when editing via web editor
 git config --global core.autocrlf input
 
 # Configure Redis connection settings
-cp config/resque.yml.example config/resque.yml
+cp -v config/resque.yml.example config/resque.yml
 
 # Configure GitLab DB Settings
 # MySQL only:
-cp config/database.yml.mysql config/database.yml
+cp -v config/database.yml.mysql config/database.yml
 sed -i \
 -e 's#\(.*pool:\) 10#\1 20#' \
 -e 's#\(.*username:\) git#\1 gitlab#' \
@@ -815,7 +858,7 @@ config/database.yml
 
 #### Gitlab ruby on Rails
 > here we start to face the ruby on rails dependency issue which worries me a lot.
-> In order to make life easier, I made my own wheel which.
+> In order to make life easier, I made my own wheel.
 
 ```
 # Install the Bundler Gem and all the related rails gems
@@ -842,11 +885,16 @@ http://gems:9292/
  [root@gitlab ~]#
 ```
 
+# config bundler source mirror if it's the first time you initialize your bundler
+```
+bundle config mirror.https://rubygems.org https://ruby.taobao.org
+```
+
 #### Install Gems
 Note: As of bundler 1.5.2, you can invoke bundle install -jN (where N the number of your processor cores) and enjoy the parallel gems installation with measurable difference in completion time (~60% faster). Check the number of your cores with nproc. For more information check this post. First make sure you have bundler >= 1.5.2 (run bundle -v) as it addresses some issues that were fixed in 1.5.2.
 ```
 # For PostgreSQL (note, the option says "without ... mysql")
-bundle install --deployment --without development test mysql aws kerberos
+#bundle install --deployment --without development test mysql aws kerberos
 
 # Or if you use MySQL (note, the option says "without ... postgres")
 bundle install --deployment --without development test postgres aws kerberos
@@ -865,6 +913,12 @@ Note: You can set the Administrator/root password by supplying it in environment
 bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=yourpassword
 ```
 
+# default passowrd for root access
+```
+login.........root
+password......5iveL!fe
+```
+
 #### Install schedules
 ```
 # Setup schedules
@@ -874,7 +928,10 @@ sudo -u gitlab_ci -H bundle exec whenever -w RAILS_ENV=production
 #### Install Init Script
 Download the init script (will be /etc/init.d/gitlab):
 ```
-sudo cp lib/support/init.d/gitlab /etc/init.d/gitlab
+sudo cp -v lib/support/init.d/gitlab /etc/init.d/gitlab
+sudo sed -i -e 's/home/opt/g' /etc/init.d/gitlab
+sudo cp -v lib/support/init.d/gitlab.default.example /etc/default/gitlab
+sudo sed -i -e 's/home/opt/g' /etc/default/gitlab
 ```
 If you installed GitLab in another directory or as a user other than the default you should change these settings in /etc/default/gitlab. Do not edit /etc/init.d/gitlab as it will be changed on upgrade.
 Make GitLab start on boot:
@@ -908,7 +965,7 @@ sudo /etc/init.d/gitlab restart
 ### Nginx
 ```
 tar xvf nginx-1.9.3.tar.gz
-cd nginx-1.9.3
+p nginx-1.9.3
 ./configure --prefix=/opt/nginx --with-http_ssl_module --with-ipv6 --user=nobody --group=nobody --with-threads --with-stream --with-stream_ssl_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_gunzip_module --with-http_degradation_module
 ## --with-debug
 make -j 4
@@ -918,8 +975,14 @@ sudo make install
 #### Site Configuration
 Copy the example site config:
 ```
-sudo cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
-sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
+sudo cp lib/support/nginx/gitlab-ssl /opt/nginx/conf/gitlab-ssl.conf
+sed -i -e 's#home#opt#g' \
+-e 's#YOUR_SERVER_FQDN#gitlab.cnsuning.com#g' \
+-e 's#\(access_log\)  /var/log/nginx/gitlab_access.log;#\1  /opt/nginx/logs/gitlab_access.log;#g' \
+-e 's#\(error_log\)   /var/log/nginx/gitlab_error.log;#\1  /opt/nginx/logs  /gitlab_error.log;#g' \
+-e 's#\(ssl_certificate\) /etc/nginx/ssl/gitlab.crt;#\1 /etc/nginx/ssl/cnsuning.pem;#' \
+-e 's#\(ssl_certificate_key\) /etc/nginx/ssl/gitlab.key;#\1 /etc/nginx/ssl/cnsuning.key;#' \
+/opt/nginx/conf/gitlab-ssl.conf
 ```
 
 
@@ -961,7 +1024,7 @@ Successfully installed charlock_holmes-0.6.9.4
 Parsing documentation for charlock_holmes-0.6.9.4
 Installing ri documentation for charlock_holmes-0.6.9.4
 Done installing documentation for charlock_holmes after 0 seconds
-1 gem installe
+1 gem installed
 ```
 
 
