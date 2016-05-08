@@ -800,7 +800,7 @@ sed -i \
 -e 's#\(.*host:\) localhost#\1 gitlab.example.com#g' \
 -e 's#\(.*port:\) 80#\1 443#g' \
 -e 's#\(.*https:\) false#\1 true#g' \
--e 's#\(.*email_from:\) example@example.com#\1 lvfeng@example.com#g' \
+-e 's#\(.*email_from:\) example@example.com#\1 whoami@example.com#g' \
 -e 's#\(.*repos_path:\) /home/git/repositories/#\1 /data/git/repositories/#g' \
 -e 's#/home/git#/opt/git#g' \
 config/gitlab.yml
