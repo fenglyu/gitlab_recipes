@@ -965,7 +965,7 @@ sudo /etc/init.d/gitlab restart
 ### Nginx
 ```
 tar xvf nginx-1.9.3.tar.gz
-cd nginx-1.9.3
+p nginx-1.9.3
 ./configure --prefix=/opt/nginx --with-http_ssl_module --with-ipv6 --user=nobody --group=nobody --with-threads --with-stream --with-stream_ssl_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_gunzip_module --with-http_degradation_module
 ## --with-debug
 make -j 4
