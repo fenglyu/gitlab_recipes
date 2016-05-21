@@ -20,9 +20,9 @@ Some of the install procedures are from [official install guide](https://gitlab.
 The following steps have been known to work and should be followed from up to bottom.
 If you deviate from this guide, do it with caution and make sure you don't violate
 any assumptions GitLab makes about its environment. I personally tried this on REHL6.3 but got stuck at the installation of gem charlock_holmes.
-(You may follow the manual here [gitlab-recipes Install Guild](https://github.com/gitlabhq/gitlab-recipes/tree/master/install/centos), it claim to be tested on RHEL6.3)
+(You may follow the manual here [gitlab-recipes Install Guild](https://github.com/gitlabhq/gitlab-recipes/tree/master/install/centos), it claims to be tested on RHEL6.3)
 
-## Add disk space
+## Adding disk space
 ### Extend the size of lvm partition /opt
 1. Create the physical volume
 ```
@@ -67,7 +67,7 @@ tar xvf git-2.4.5.tar.xz
 cd git-2.4.5
 make configure
 ./configure --prefix=/usr
-make -j 8 all   # fast as shit..
+make -j 8 all   # tried on 8 cores, fast as shit..
 sudo make install
 ```
 
